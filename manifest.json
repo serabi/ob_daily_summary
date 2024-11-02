@@ -1,7 +1,7 @@
 {
   "id": "ob-daily-summary",
   "name": "OB Daily Summary",
-  "version": "v0.0.6",
+  "version": "v0.0.7",
   "minAppVersion": "0.15.0",
   "description": "Auto generate daily summary",
   "author": "Luke",
