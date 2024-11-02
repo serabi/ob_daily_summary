@@ -1,0 +1,9 @@
+{
+    "id": "ob-daily-summary",
+    "name": "OB Daily Summary",
+    "version": "0.0.1",
+    "minAppVersion": "0.15.0",
+    "description": "Auto generate daily summary",
+    "author": "Luke",
+    "isDesktopOnly": false
+}

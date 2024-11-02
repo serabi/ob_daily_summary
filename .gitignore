@@ -1,0 +1,36 @@
+# dev environment
+node_modules
+.DS_Store
+.vscode
+*.log
+
+# build output
+main.js
+*.js.map
+data.json
+
+# test related
+coverage/
+.nyc_output/
+
+# env config
+.env
+.env.local
+.env.*.local
+
+# temp file
+*.tmp
+*.temp
+.cache
+
+# IDE config
+.idea/
+*.iml
+.vs/
+
+# os generated file
+Thumbs.db
+Desktop.ini
+
+# debug log
+debug-errors.md 
