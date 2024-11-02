@@ -7,7 +7,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version-bump": "node version-bump.mjs",
-    "release": "npm version patch && npm run version-bump && git add manifest.json && git commit --amend --no-edit && git tag -f v$npm_package_version && git push && git push --tags -f"
+    "release": "npm version patch && npm run version-bump && npm run build && git add manifest.json main.js && git commit --amend --no-edit && git tag -f v$npm_package_version && git push && git push --tags -f"
   },
   "keywords": [
     "obsidian",
