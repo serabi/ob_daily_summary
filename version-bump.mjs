@@ -21,7 +21,8 @@ writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
 try {
   execSync('git add manifest.json');
   execSync('git commit -m "chore: sync manifest version"');
-  execSync('git push origin main -f');
+  execSync('git push origin main');
+  execSync(`git tag -a v${package_json.version} -m "Release v${package_json.version}"`);
   console.log(`版本已更新至 ${package_json.version} 并推送到远程仓库`);
 } catch (error) {
   console.error('Git 操作失败:', error.message);
