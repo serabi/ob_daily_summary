@@ -87,8 +87,9 @@ export default class DailyDigestPlugin extends Plugin {
                 if (fileNameDate === today) return true;
 
                 // 检查文件创建/修改时间
-                const fileDate = moment(file.stat.ctime).format('YYYY-MM-DD');
-                return fileDate === today;
+                const fileCreateDate = moment(file.stat.ctime).format('YYYY-MM-DD');
+                const fileModifyDate = moment(file.stat.mtime).format('YYYY-MM-DD');
+                return fileCreateDate === today || fileModifyDate === today;
             });
 
             console.log('Found today\'s notes:', todayNotes.map(n => n.name));
