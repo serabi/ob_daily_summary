@@ -1,14 +1,13 @@
 {
   "name": "ob-daily-summary",
-  "version": "0.0.8",
+  "version": "0.0.6",
   "description": "Auto generate daily summary",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version-bump": "node version-bump.mjs",
-    "release": "npm version patch && npm run version-bump && npm run build && git add manifest.json versions.json main.js && git commit --amend --no-edit && git tag -f v$npm_package_version && git push origin main --follow-tags"
-  },
+    "release": "npm version patch && npm run version-bump"
   "keywords": [
     "obsidian",
     "obsidian-plugin"
@@ -22,7 +21,7 @@
     "builtin-modules": "^3.2.0",
     "esbuild": "^0.19.0",
     "obsidian": "latest",
-    "tslib": "^2.3.1",
+    "tslib": "2.3.1",
     "typescript": "^4.8.4"
   },
   "dependencies": {

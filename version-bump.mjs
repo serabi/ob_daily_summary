@@ -1,14 +1,29 @@
 import { readFileSync, writeFileSync } from 'fs';
+import { execSync } from 'child_process';
 
-const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+// 执行 npm version patch 来更新版本号
+try {
+  execSync('npm version patch');
+} catch (error) {
+  console.error('执行 npm version patch 失败:', error.message);
+  process.exit(1);
+}
+
+// 重新读取更新后的 package.json
 const package_json = JSON.parse(readFileSync('package.json', 'utf8'));
+const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
 
-// 从 package.json 获取版本号并添加 'v' 前缀
-const version = `v${package_json.version}`;
-
-// 更新 manifest.json 中的版本号（不带 'v' 前缀）
+// 更新 manifest.json 中的版本号
 manifest.version = "v" + package_json.version;
-
 writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
 
-console.log(`Manifest version synced to ${version}`); 
+// Git 操作
+try {
+  execSync('git add manifest.json');
+  execSync('git commit -m "chore: sync manifest version"');
+  execSync('git push origin main');
+  console.log(`版本已更新至 ${package_json.version} 并推送到远程仓库`);
+} catch (error) {
+  console.error('Git 操作失败:', error.message);
+  process.exit(1);
+} 
