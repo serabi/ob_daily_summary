@@ -11,7 +11,7 @@ console.log(version);
 version = version.replace(/\.(\d+)$/, (_, p1) => `.${parseInt(p1) + 1}`);
 
 // 更新 manifest.json 中的版本号
-
+const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
 manifest.version = "v" + version;
 writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
 
