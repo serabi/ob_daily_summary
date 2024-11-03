@@ -20,8 +20,7 @@ try {
   execSync('npm version patch');
   
   // 最后推送所有更改
-  execSync('git push origin main');
-  execSync('git push origin --tags');
+  execSync('git push origin main --follow-tags');
   
   console.log(`版本已更新至 ${nextVersion} 并推送到远程仓库`);
 } catch (error) {
