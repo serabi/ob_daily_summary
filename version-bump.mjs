@@ -12,7 +12,7 @@ version = version.replace(/\.(\d+)$/, (_, p1) => `.${parseInt(p1) + 1}`);
 
 // 更新 manifest.json 中的版本号
 const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
-manifest.version = "v" + version;
+manifest.version = version;
 writeFileSync('manifest.json', JSON.stringify(manifest, null, 2));
 
 // update package.json
@@ -24,7 +24,7 @@ execSync('git add package.json manifest.json');
 execSync(`git commit -m "chore: bump version to ${version}"`);
 
 // set tag
-execSync(`git tag -a v${version} -m "Release v${version}"`);
+execSync(`git tag -a ${version} -m "Release ${version}"`);
 
 // push
 execSync('git push origin main --follow-tags');
