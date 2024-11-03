@@ -3,7 +3,7 @@ import { execSync } from 'child_process';
 
 // get version from package.json
 const package_json = JSON.parse(readFileSync('package.json', 'utf8'));
-const version = package_json.version;
+let version = package_json.version;
 
 console.log(version);
 
