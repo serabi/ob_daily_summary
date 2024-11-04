@@ -5,8 +5,6 @@ import { execSync } from 'child_process';
 const package_json = JSON.parse(readFileSync('package.json', 'utf8'));
 let version = package_json.version;
 
-console.log(version);
-
 // modify patch version
 version = version.replace(/\.(\d+)$/, (_, p1) => `.${parseInt(p1) + 1}`);
 

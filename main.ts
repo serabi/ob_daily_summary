@@ -28,7 +28,6 @@ export default class DailyDigestPlugin extends Plugin {
 
     async generateDailyReport() {
         try {
-            console.log('Start generating daily report...');
 
             // 检查设置
             if (!this.settings.apiKey || !this.settings.apiEndpoint) {
@@ -38,7 +37,6 @@ export default class DailyDigestPlugin extends Plugin {
             }
 
             const date = new Date().toISOString().split('T')[0];
-            console.log(`Processing date: ${date}`);
 
             // 获取今日笔记
             const todayNotes = await this.getTodayNotes();
@@ -52,10 +50,8 @@ export default class DailyDigestPlugin extends Plugin {
 
             // 调用 LLM
             const prompt = await this.generatePrompt(todayNotes);
-            console.log('Generated prompt:', prompt);
 
             const summary = await this.callLLM(prompt);
-            console.log('LLM returned result:', summary);
 
             if (!summary) {
                 new Notice('Failed to generate summary');
@@ -78,8 +74,6 @@ export default class DailyDigestPlugin extends Plugin {
             const files = this.app.vault.getMarkdownFiles();
             const today = moment().format('YYYY-MM-DD');
 
-            console.log('Searching for today\'s notes, date:', today);
-            console.log('Total files:', files.length);
 
             const todayNotes = files.filter(file => {
                 // 检查文件名中的日期
@@ -92,7 +86,6 @@ export default class DailyDigestPlugin extends Plugin {
                 return fileCreateDate === today || fileModifyDate === today;
             });
 
-            console.log('Found today\'s notes:', todayNotes.map(n => n.name));
             return todayNotes;
 
         } catch (error) {
@@ -103,8 +96,6 @@ export default class DailyDigestPlugin extends Plugin {
 
     async callLLM(prompt: string) {
         try {
-            console.log('Calling LLM API...');
-            console.log('Using endpoint:', this.settings.apiEndpoint);
 
             const response = await fetch(this.settings.apiEndpoint, {
                 method: 'POST',
@@ -124,7 +115,6 @@ export default class DailyDigestPlugin extends Plugin {
                 })
             });
 
-            console.log('API response status:', response.status);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -133,7 +123,6 @@ export default class DailyDigestPlugin extends Plugin {
             }
 
             const data = await response.json();
-            console.log('API returned data:', data);
 
             return data.choices?.[0]?.message?.content || '';
 
@@ -146,7 +135,6 @@ export default class DailyDigestPlugin extends Plugin {
     async createDailyReport(date: string, content: string) {
         try {
             const fileName = `${this.settings.reportLocation}/Daily Report-${date}.md`.replace('//', '/');
-            console.log('Preparing to create file:', fileName);
 
             // 检查文件是否已存在
             if (await this.app.vault.adapter.exists(fileName)) {
@@ -154,12 +142,10 @@ export default class DailyDigestPlugin extends Plugin {
                 const existingContent = await this.app.vault.adapter.read(fileName);
                 const newContent = `${existingContent}\n\n## 更新于 ${new Date().toLocaleTimeString()}\n\n${content}`;
                 await this.app.vault.adapter.write(fileName, newContent);
-                console.log('File already exists, content updated');
             } else {
                 // 如果文件不存在，创建新文件
                 const fileContent = `# ${date} 日报\n\n${content}`;
                 await this.app.vault.create(fileName, fileContent);
-                console.log('New file created');
             }
 
         } catch (error) {
