@@ -1,4 +1,4 @@
-import esbuild from "esbuild";
+import * as esbuild from 'esbuild-wasm';
 import process from "process";
 import { builtinModules } from 'module';
 
