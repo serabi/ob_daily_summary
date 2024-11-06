@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, Modal } from 'obsidian';
 import { PluginSettings, DEFAULT_SETTINGS } from './setting';
 import moment from 'moment';
 export default class DailyDigestPlugin extends Plugin {
@@ -14,7 +14,19 @@ export default class DailyDigestPlugin extends Plugin {
         this.addCommand({
             id: 'generate-daily-report',
             name: 'Generate Daily Report',
-            callback: () => this.generateDailyReport()
+            callback: () => this.generateDailyReport(0)
+        });
+
+        this.addCommand({
+            id: 'generate-previous-day-report',
+            name: 'Generate Previous Day Report',
+            callback: () => {
+                const modal = new DaysSelectionModal(this.app, async (days: number) => {
+                    if (days > 0) days = -days;
+                    await this.generateDailyReport(days);
+                });
+                modal.open();
+            }
         });
     }
 
@@ -26,25 +38,22 @@ export default class DailyDigestPlugin extends Plugin {
         await this.saveData(this.settings);
     }
 
-    async generateDailyReport() {
+    async generateDailyReport(daysOffset: number = 0) {
         try {
+            const targetDate = moment().add(daysOffset, 'days');
+            const dateStr = targetDate.format('YYYY-MM-DD');
 
-            // 检查设置
-            if (!this.settings.apiKey || !this.settings.apiEndpoint) {
-                new Notice('Error: Please configure API Key and Endpoint first');
-                console.error('API configuration missing');
-                return;
-            }
-
-            const date = new Date().toISOString().split('T')[0];
-
-            // 获取今日笔记
-            const todayNotes = await this.getTodayNotes();
-
-            new Notice(`Today's note count: ${todayNotes.length}`);
+            // 获取指定日期的笔记
+            const files = this.app.vault.getMarkdownFiles();
+            const todayNotes = files.filter(file => {
+                const fileCreateDate = moment(file.stat.ctime).format('YYYY-MM-DD');
+                const fileModifyDate = moment(file.stat.mtime).format('YYYY-MM-DD');
+                return fileCreateDate === dateStr || fileModifyDate === dateStr;
+            });
+            new Notice(`找到 ${todayNotes.length} 篇笔记`);
 
             if (todayNotes.length === 0) {
-                new Notice('No notes found today!');
+                new Notice(`没有找到 ${dateStr} 的笔记`);
                 return;
             }
 
@@ -59,7 +68,7 @@ export default class DailyDigestPlugin extends Plugin {
             }
 
             // 创建报告
-            await this.createDailyReport(date, summary);
+            await this.createDailyReport(dateStr, summary);
             new Notice('Daily report generated successfully!');
 
         } catch (error) {
@@ -89,7 +98,6 @@ export default class DailyDigestPlugin extends Plugin {
             return todayNotes;
 
         } catch (error) {
-            console.error('Error getting today\'s notes:', error);
             throw error;
         }
     }
@@ -255,5 +263,46 @@ class DailyDigestSettingTab extends PluginSettingTab {
                     this.plugin.settings.reportLocation = value;
                     await this.plugin.saveSettings();
                 }));
+    }
+}
+
+// 添加一个选择天数的模态框
+class DaysSelectionModal extends Modal {
+    private daysCallback: (days: number) => void;
+
+    constructor(app: App, callback: (days: number) => void) {
+        super(app);
+        this.daysCallback = callback;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.createEl('h3', { text: '选择要生成报告的天数' });
+
+        const inputEl = contentEl.createEl('input', {
+            type: 'number',
+            value: '1',
+            attr: {
+                min: '1',
+                max: '30'  // 设置最大值防止选择太久远的日期
+            }
+        });
+
+        const buttonEl = contentEl.createEl('button', {
+            text: '确认'
+        });
+
+        buttonEl.onclick = () => {
+            const days = parseInt(inputEl.value);
+            if (!isNaN(days) && days > 0) {
+                this.daysCallback(days);
+                this.close();
+            }
+        };
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
     }
 }
