@@ -1,4 +1,14 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, moment, normalizePath } from 'obsidian';
+import {
+    App,
+    Plugin,
+    PluginSettingTab,
+    Setting,
+    Notice,
+    Modal,
+    moment,
+    normalizePath,
+    requestUrl
+} from 'obsidian';
 import { PluginSettings, DEFAULT_SETTINGS } from './setting';
 
 export default class DailyDigestPlugin extends Plugin {
@@ -7,10 +17,8 @@ export default class DailyDigestPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
 
-        // 添加设置选项卡
         this.addSettingTab(new DailyDigestSettingTab(this.app, this));
 
-        // 添加命令
         this.addCommand({
             id: 'generate-daily-report',
             name: 'Generate daily report',
@@ -43,21 +51,19 @@ export default class DailyDigestPlugin extends Plugin {
             const targetDate = moment().add(daysOffset, 'days');
             const dateStr = targetDate.format('YYYY-MM-DD');
 
-            // 获取指定日期的笔记
             const files = this.app.vault.getMarkdownFiles();
             const todayNotes = files.filter(file => {
                 const fileCreateDate = moment(file.stat.ctime).format('YYYY-MM-DD');
                 const fileModifyDate = moment(file.stat.mtime).format('YYYY-MM-DD');
                 return fileCreateDate === dateStr || fileModifyDate === dateStr;
             });
-            new Notice(`找到 ${todayNotes.length} 篇笔记`);
+            new Notice(`Found ${todayNotes.length} notes`);
 
             if (todayNotes.length === 0) {
-                new Notice(`没有找到 ${dateStr} 的笔记`);
+                new Notice(`No notes found for ${dateStr}`);
                 return;
             }
 
-            // 调用 LLM
             const prompt = await this.generatePrompt(todayNotes);
 
             const summary = await this.callLLM(prompt);
@@ -67,7 +73,6 @@ export default class DailyDigestPlugin extends Plugin {
                 return;
             }
 
-            // 创建报告
             await this.createDailyReport(dateStr, summary);
             new Notice('Daily report generated successfully!');
 
@@ -85,11 +90,9 @@ export default class DailyDigestPlugin extends Plugin {
 
 
             const todayNotes = files.filter(file => {
-                // 检查文件名中的日期
                 const fileNameDate = this.getDateFromFileName(file.name);
                 if (fileNameDate === today) return true;
 
-                // 检查文件创建/修改时间
                 const fileCreateDate = moment(file.stat.ctime).format('YYYY-MM-DD');
                 const fileModifyDate = moment(file.stat.mtime).format('YYYY-MM-DD');
                 return fileCreateDate === today || fileModifyDate === today;
@@ -105,7 +108,8 @@ export default class DailyDigestPlugin extends Plugin {
     async callLLM(prompt: string) {
         try {
 
-            const response = await fetch(this.settings.apiEndpoint, {
+            const response = await requestUrl({
+                url: this.settings.apiEndpoint,
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -124,15 +128,11 @@ export default class DailyDigestPlugin extends Plugin {
             });
 
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API response error:', errorText);
-                throw new Error(`API request failed: ${response.status} ${errorText}`);
+            if (response.status !== 200) {
+                throw new Error(`API request failed: ${response.status}`);
             }
 
-            const data = await response.json();
-
-            return data.choices?.[0]?.message?.content || '';
+            return response.json.choices?.[0]?.message?.content || '';
 
         } catch (error) {
             await this.logError(error, 'Fail to call LLM API');
@@ -144,15 +144,12 @@ export default class DailyDigestPlugin extends Plugin {
         try {
             const fileName = normalizePath(`${this.settings.reportLocation}/Daily Report-${date}.md`);
 
-            // 检查文件是否已存在
             if (await this.app.vault.adapter.exists(fileName)) {
-                // 如果文件存在，追加内容或更新内容
                 const existingContent = await this.app.vault.adapter.read(fileName);
-                const newContent = `${existingContent}\n\n## 更新于 ${new Date().toLocaleTimeString()}\n\n${content}`;
+                const newContent = `${existingContent}\n\n## updated at ${new Date().toLocaleTimeString()}\n\n${content}`;
                 await this.app.vault.adapter.write(fileName, newContent);
             } else {
-                // 如果文件不存在，创建新文件
-                const fileContent = `# ${date} 日报\n\n${content}`;
+                const fileContent = `# ${date} report\n\n${content}`;
                 await this.app.vault.create(fileName, fileContent);
             }
 
@@ -163,15 +160,12 @@ export default class DailyDigestPlugin extends Plugin {
     }
 
     private getDateFromFileName(fileName: string): string {
-        // 根据你的文件命名规则来实现
-        // 例如: "2024-03-20.md" => "2024-03-20"
         const match = fileName.match(/(\d{4}-\d{2}-\d{2})/);
         return match ? match[1] : '';
     }
 
     private async generatePrompt(notes: any[]): Promise<string> {
         try {
-            // 等待所有笔记内容读取完成
             const notesContents = await Promise.all(
                 notes.map(async note => {
                     const content = await this.app.vault.read(note);
@@ -179,7 +173,6 @@ export default class DailyDigestPlugin extends Plugin {
                 })
             );
 
-            // 将所有笔记内容合并
             const allContent = notesContents.join('\n\n');
 
             return `Please summarize the main content of today's notes:\n\n${allContent}`;
@@ -203,7 +196,6 @@ API configuration:
 `;
             const logFile = `${this.settings.reportLocation}/debug-errors.md`;
 
-            // 检查文件是否存在
             let content = errorLog;
             if (await this.app.vault.adapter.exists(logFile)) {
                 const existingContent = await this.app.vault.adapter.read(logFile);
@@ -217,7 +209,6 @@ API configuration:
     }
 }
 
-// 添加设置界面
 class DailyDigestSettingTab extends PluginSettingTab {
     plugin: DailyDigestPlugin;
 
@@ -265,7 +256,6 @@ class DailyDigestSettingTab extends PluginSettingTab {
     }
 }
 
-// 添加一个选择天数的模态框
 class DaysSelectionModal extends Modal {
     private daysCallback: (days: number) => void;
 
@@ -276,19 +266,19 @@ class DaysSelectionModal extends Modal {
 
     onOpen() {
         const { contentEl } = this;
-        contentEl.createEl('h3', { text: '选择要生成报告的天数' });
+        contentEl.createEl('h3', { text: 'Select the number of days to generate the report' });
 
         const inputEl = contentEl.createEl('input', {
             type: 'number',
             value: '1',
             attr: {
                 min: '1',
-                max: '30'  // 设置最大值防止选择太久远的日期
+                max: '30'
             }
         });
 
         const buttonEl = contentEl.createEl('button', {
-            text: '确认'
+            text: 'Confirm'
         });
 
         buttonEl.onclick = () => {
