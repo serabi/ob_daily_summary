@@ -1,4 +1,4 @@
-# Obsidian Daily Summary Plugin
+# Daily Summary Plugin for Obsidian
 
 An Obsidian plugin that automatically generates daily summaries. It collects notes from the current day and uses LLM to generate a concise daily report.
 
