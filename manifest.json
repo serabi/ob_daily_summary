@@ -1,7 +1,7 @@
 {
   "id": "daily-summary",
   "name": "Daily Summary",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "minAppVersion": "0.15.0",
   "description": "Auto generate daily summary",
   "author": "Luke",
