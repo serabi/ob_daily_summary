@@ -1,6 +1,6 @@
-import { App, Plugin, PluginSettingTab, Setting, Notice, Modal } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, Notice, Modal, moment, normalizePath } from 'obsidian';
 import { PluginSettings, DEFAULT_SETTINGS } from './setting';
-import moment from 'moment';
+
 export default class DailyDigestPlugin extends Plugin {
     settings: PluginSettings;
 
@@ -13,13 +13,13 @@ export default class DailyDigestPlugin extends Plugin {
         // 添加命令
         this.addCommand({
             id: 'generate-daily-report',
-            name: 'Generate Daily Report',
+            name: 'Generate daily report',
             callback: () => this.generateDailyReport(0)
         });
 
         this.addCommand({
             id: 'generate-previous-day-report',
-            name: 'Generate Previous Day Report',
+            name: 'Generate previous day report',
             callback: () => {
                 const modal = new DaysSelectionModal(this.app, async (days: number) => {
                     if (days > 0) days = -days;
@@ -142,7 +142,7 @@ export default class DailyDigestPlugin extends Plugin {
 
     async createDailyReport(date: string, content: string) {
         try {
-            const fileName = `${this.settings.reportLocation}/Daily Report-${date}.md`.replace('//', '/');
+            const fileName = normalizePath(`${this.settings.reportLocation}/Daily Report-${date}.md`);
 
             // 检查文件是否已存在
             if (await this.app.vault.adapter.exists(fileName)) {
@@ -211,7 +211,6 @@ API configuration:
             }
 
             await this.app.vault.adapter.write(logFile, content);
-            console.error('Error logged to:', logFile);
         } catch (logError) {
             console.error('Fail to write error log:', logError);
         }
@@ -232,10 +231,10 @@ class DailyDigestSettingTab extends PluginSettingTab {
         containerEl.empty();
 
         new Setting(containerEl)
-            .setName('API Key')
-            .setDesc('Enter your LLM API Key')
+            .setName('API key')
+            .setDesc('Enter your LLM API key')
             .addText(text => text
-                .setPlaceholder('Enter API Key')
+                .setPlaceholder('Enter API key')
                 .setValue(this.plugin.settings.apiKey)
                 .onChange(async (value) => {
                     this.plugin.settings.apiKey = value;
@@ -243,7 +242,7 @@ class DailyDigestSettingTab extends PluginSettingTab {
                 }));
 
         new Setting(containerEl)
-            .setName('API Endpoint')
+            .setName('API endpoint')
             .setDesc('Enter API endpoint address')
             .addText(text => text
                 .setPlaceholder('https://api.example.com/v1/chat')
