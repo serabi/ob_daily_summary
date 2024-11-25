@@ -22,7 +22,7 @@ const buildOptions = {
         ...builtinModules
     ],
     format: "cjs",
-    target: "es2016",
+    target: "esnext",
     logLevel: "info",
     sourcemap: prod ? false : "inline",
     treeShaking: true,

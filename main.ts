@@ -5,7 +5,6 @@ import {
     Setting,
     Notice,
     Modal,
-    moment,
     normalizePath,
     requestUrl
 } from 'obsidian';
@@ -48,32 +47,34 @@ export default class DailyDigestPlugin extends Plugin {
 
     async generateDailyReport(daysOffset: number = 0) {
         try {
-            const targetDate = moment().add(daysOffset, 'days');
-            const dateStr = targetDate.format('YYYY-MM-DD');
+            const targetDate = new Date();
+            targetDate.setDate(targetDate.getDate() + daysOffset);
+            targetDate.setHours(0,0,0,0);
 
             const files = this.app.vault.getMarkdownFiles();
             const todayNotes = files.filter(file => {
-                const fileCreateDate = moment(file.stat.ctime).format('YYYY-MM-DD');
-                const fileModifyDate = moment(file.stat.mtime).format('YYYY-MM-DD');
-                return fileCreateDate === dateStr || fileModifyDate === dateStr;
+                const fileCreateDate = new Date(file.stat.ctime).setHours(0,0,0,0);
+                const fileModifyDate = new Date(file.stat.mtime).setHours(0,0,0,0);
+                return fileCreateDate.valueOf() === targetDate.valueOf() || fileModifyDate.valueOf() === targetDate.valueOf();
+                // It is important that the dates we compare here had their TIME part zeroed out with date.setHours(0,0,0,0)
             });
             new Notice(`Found ${todayNotes.length} notes`);
 
             if (todayNotes.length === 0) {
-                new Notice(`No notes found for ${dateStr}`);
+                new Notice(`No notes found for ${targetDate.toISOString().split('T')[0]}`);
                 return;
             }
 
-            const prompt = await this.generatePrompt(todayNotes);
+            const prompt:string = await this.generatePrompt(todayNotes);
 
-            const summary = await this.callLLM(prompt);
+            const summary:string = await this.callLLM(prompt);
 
             if (!summary) {
                 new Notice('Failed to generate summary');
                 return;
             }
 
-            await this.createDailyReport(dateStr, summary);
+            await this.createDailyReport(targetDate, summary);
             new Notice('Daily report generated successfully!');
 
         } catch (error) {
@@ -86,16 +87,23 @@ export default class DailyDigestPlugin extends Plugin {
     async getTodayNotes() {
         try {
             const files = this.app.vault.getMarkdownFiles();
-            const today = moment().format('YYYY-MM-DD');
+            const todayDate = new Date().setHours(0,0,0,0);
 
 
             const todayNotes = files.filter(file => {
-                const fileNameDate = this.getDateFromFileName(file.name);
-                if (fileNameDate === today) return true;
-
-                const fileCreateDate = moment(file.stat.ctime).format('YYYY-MM-DD');
-                const fileModifyDate = moment(file.stat.mtime).format('YYYY-MM-DD');
-                return fileCreateDate === today || fileModifyDate === today;
+                try {
+                    // Check if the file has the date in its name
+                    const fileNameDate = this.getDateFromFileName(file.name).setHours(0,0,0,0);
+                    if (fileNameDate.valueOf() === todayDate.valueOf()) return true;
+                    else return false; // If the file DOES have a date in its name, but its not current, then we don't want this file
+                } catch(err) {
+                    // If the file does not have a date in its name
+                    // Check if the file has a matching creation or modification date
+                    const fileCreateDate = new Date(file.stat.ctime).setHours(0,0,0,0);
+                    const fileModifyDate = new Date(file.stat.mtime).setHours(0,0,0,0);
+                    return fileCreateDate.valueOf() === todayDate.valueOf() || fileModifyDate.valueOf() === todayDate.valueOf(); 
+                    // It is important that the dates we compare here had their TIME part zeroed out with date.setHours(0,0,0,0)
+                }
             });
 
             return todayNotes;
@@ -170,16 +178,16 @@ export default class DailyDigestPlugin extends Plugin {
         }
     }
 
-    async createDailyReport(date: string, content: string) {
+    async createDailyReport(date: Date, content: string) {
         try {
-            const fileName = normalizePath(`${this.settings.reportLocation}/Daily Report-${date}.md`);
+            const fileName = normalizePath(`${this.settings.reportLocation}/Daily Report-${date.toISOString().split('T')[0]}.md`);
 
             if (await this.app.vault.adapter.exists(fileName)) {
                 const existingContent = await this.app.vault.adapter.read(fileName);
                 const newContent = `${existingContent}\n\n## updated at ${new Date().toLocaleTimeString()}\n\n${content}`;
                 await this.app.vault.adapter.write(fileName, newContent);
             } else {
-                const fileContent = `# ${date} report\n\n${content}`;
+                const fileContent = `# ${date.toISOString().split('T')[0]} report\n\n${content}`;
                 await this.app.vault.create(fileName, fileContent);
             }
 
@@ -189,9 +197,12 @@ export default class DailyDigestPlugin extends Plugin {
         }
     }
 
-    private getDateFromFileName(fileName: string): string {
+    private getDateFromFileName(fileName: string): Date {
         const match = fileName.match(/(\d{4}-\d{2}-\d{2})/);
-        return match ? match[1] : '';
+        if (match == null) {
+            throw "FileName is not a date";
+        }
+        return new Date(match[1])
     }
 
     private async generatePrompt(notes: any[]): Promise<string> {
