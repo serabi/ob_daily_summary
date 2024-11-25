@@ -107,33 +107,63 @@ export default class DailyDigestPlugin extends Plugin {
 
     async callLLM(prompt: string) {
         try {
-
-            const response = await requestUrl({
-                url: this.settings.apiEndpoint,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.settings.apiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
+            if (this.settings.ollamaModel != "") { // If ollamaModel set, run Ollama query
+                let endpoint = this.settings.apiEndpoint;
+                if (endpoint === "") {
+                    endpoint = "http://localhost:11434"
+                }
+                const response = await requestUrl({
+                    method: "POST",
+                    url: `${endpoint}/api/generate`,
+                    body: JSON.stringify({
+                        prompt: prompt,
+                        model: this.settings.ollamaModel,
+                        options: {
+                            temperature: 0.7,
                         }
-                    ],
-                    temperature: 0.7
-                })
-            });
+                    })
+                }).then((response) => {
+                    if (response.status !== 200) {
+                        throw new Error(`Ollama request failed: ${response.status}`);
+                    }
+                    const steps:string = response.text
+                        .split("\n")
+                        .filter((step) => step && step.length > 0)
+                        .map((step) => JSON.parse(step))
+                        .map((step) => step.response)
+                        .join("")
+                        .trim();
+                    return steps;
+                });
 
-
-            if (response.status !== 200) {
-                throw new Error(`API request failed: ${response.status}`);
+                return response;
+            } else { // Run ChatGPT query
+                    const response = await requestUrl({
+                        url: this.settings.apiEndpoint,
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${this.settings.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'gpt-4o-mini',
+                            messages: [
+                                {
+                                    role: 'user',
+                                    content: prompt
+                                }
+                            ],
+                            temperature: 0.7
+                        })
+                    });
+        
+        
+                    if (response.status !== 200) {
+                        throw new Error(`API request failed: ${response.status}`);
+                    }
+        
+                    return response.json.choices?.[0]?.message?.content || '';
             }
-
-            return response.json.choices?.[0]?.message?.content || '';
-
         } catch (error) {
             await this.logError(error, 'Fail to call LLM API');
             throw new Error(`Fail to call LLM API: ${error.message}`);
@@ -191,6 +221,7 @@ Error message: ${error.message}
 Stack trace: ${error.stack}
 API configuration: 
 - endpoint: ${this.settings.apiEndpoint || 'Not set'}
+- model: ${this.settings.ollamaModel} || 'Not set'}
 - apiKey: ${this.settings.apiKey ? 'Set' : 'Not set'}
 -------------------
 `;
@@ -242,6 +273,18 @@ class DailyDigestSettingTab extends PluginSettingTab {
                     this.plugin.settings.apiEndpoint = value;
                     await this.plugin.saveSettings();
                 }));
+        
+        new Setting(containerEl)
+            .setName("Ollama model")
+            .setDesc("Exact name of the ollama model to use for prompts. If empty, ChatGPT is used")
+            .addText(text => text
+                .setPlaceholder('llama-3.1-8B')
+                .setValue(this.plugin.settings.ollamaModel)
+                .onChange(async (value) => {
+                    this.plugin.settings.ollamaModel = value;
+                    await this.plugin.saveSettings();
+                })
+            )
 
         new Setting(containerEl)
             .setName('Report save location')

@@ -26,6 +26,13 @@ An Obsidian plugin that automatically generates daily summaries. It collects not
    - Configure API Endpoint
    - Set report save location
 
+1.1. To use local Ollama models
+   - Set Ollama model you want to use
+      - To find installed models, type `ollama list` into a terminal
+      - Or find interesting local models on https://ollama.com/library
+   - Configure API Endpoint
+      - If you use a different port or run a remote ollama session
+
 2. Generate a report:
    - Use the command palette and search for `Generate Daily Report`
    - The plugin will automatically collect today's notes and generate a summary
@@ -34,6 +41,7 @@ An Obsidian plugin that automatically generates daily summaries. It collects not
 
 - `API Key`: Your LLM API key
 - `API Endpoint`: API endpoint URL
+- `Ollama Model`: Exact name of the Ollama model
 - `Report Location`: Where to save daily reports (e.g., /Daily Reports)
 
 ## Supported Platforms
@@ -58,6 +66,9 @@ The plugin includes comprehensive error logging:
 Luke
 
 ## Changelog
+
+### 1.0.7
+- Ollama support addition
 
 ### 1.0.6
 - Initial release
