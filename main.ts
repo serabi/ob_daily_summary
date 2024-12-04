@@ -47,14 +47,17 @@ export default class DailyDigestPlugin extends Plugin {
 
     async generateDailyReport(daysOffset: number = 0) {
         try {
-            const targetDate = new Date();
+            let targetDate = new Date();
             targetDate.setDate(targetDate.getDate() + daysOffset);
-            targetDate.setHours(0,0,0,0);
+            targetDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
 
             const files = this.app.vault.getMarkdownFiles();
             const todayNotes = files.filter(file => {
-                const fileCreateDate = new Date(file.stat.ctime).setHours(0,0,0,0);
-                const fileModifyDate = new Date(file.stat.mtime).setHours(0,0,0,0);
+                const fileDate = new Date(file.stat.ctime);
+                const fileCreateDate = new Date(fileDate.getFullYear(), fileDate.getMonth(), fileDate.getDate()).getTime();
+                const modifyDate = new Date(file.stat.mtime);
+                const fileModifyDate = new Date(modifyDate.getFullYear(), modifyDate.getMonth(), modifyDate.getDate()).getTime();
+                
                 const isExcluded = this.settings.excludedFolders.some(folder => {
                     if (!folder) return false;
                     const normalizedFolder = normalizePath(folder);
@@ -62,8 +65,9 @@ export default class DailyDigestPlugin extends Plugin {
                     return normalizedFilePath.startsWith(normalizedFolder + '/') || 
                            normalizedFilePath === normalizedFolder;
                 });
-                return !isExcluded && (fileCreateDate.valueOf() === targetDate.valueOf() || 
-                       fileModifyDate.valueOf() === targetDate.valueOf());
+                
+                return !isExcluded && (fileCreateDate === targetDate.getTime() || 
+                       fileModifyDate === targetDate.getTime());
             });
             new Notice(`Found ${todayNotes.length} notes`);
 
@@ -88,35 +92,6 @@ export default class DailyDigestPlugin extends Plugin {
             await this.logError(error, 'Fail to generate report');
             console.error('Error generating daily report:', error);
             new Notice(`Error: ${error.message}`);
-        }
-    }
-
-    async getTodayNotes() {
-        try {
-            const files = this.app.vault.getMarkdownFiles();
-            const todayDate = new Date().setHours(0,0,0,0);
-
-
-            const todayNotes = files.filter(file => {
-                try {
-                    // Check if the file has the date in its name
-                    const fileNameDate = this.getDateFromFileName(file.name).setHours(0,0,0,0);
-                    if (fileNameDate.valueOf() === todayDate.valueOf()) return true;
-                    else return false; // If the file DOES have a date in its name, but its not current, then we don't want this file
-                } catch(err) {
-                    // If the file does not have a date in its name
-                    // Check if the file has a matching creation or modification date
-                    const fileCreateDate = new Date(file.stat.ctime).setHours(0,0,0,0);
-                    const fileModifyDate = new Date(file.stat.mtime).setHours(0,0,0,0);
-                    return fileCreateDate.valueOf() === todayDate.valueOf() || fileModifyDate.valueOf() === todayDate.valueOf(); 
-                    // It is important that the dates we compare here had their TIME part zeroed out with date.setHours(0,0,0,0)
-                }
-            });
-
-            return todayNotes;
-
-        } catch (error) {
-            throw error;
         }
     }
 
@@ -187,14 +162,18 @@ export default class DailyDigestPlugin extends Plugin {
 
     async createDailyReport(date: Date, content: string) {
         try {
-            const fileName = normalizePath(`${this.settings.reportLocation}/Daily Report-${date.toISOString().split('T')[0]}.md`);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${day}`;
+            const fileName = normalizePath(`${this.settings.reportLocation}/Daily Report-${dateString}.md`);
 
             if (await this.app.vault.adapter.exists(fileName)) {
                 const existingContent = await this.app.vault.adapter.read(fileName);
                 const newContent = `${existingContent}\n\n## updated at ${new Date().toLocaleTimeString()}\n\n${content}`;
                 await this.app.vault.adapter.write(fileName, newContent);
             } else {
-                const fileContent = `# ${date.toISOString().split('T')[0]} report\n\n${content}`;
+                const fileContent = `# ${dateString} report\n\n${content}`;
                 await this.app.vault.create(fileName, fileContent);
             }
 
