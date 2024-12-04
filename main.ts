@@ -154,7 +154,7 @@ export default class DailyDigestPlugin extends Plugin {
                             'Authorization': `Bearer ${this.settings.apiKey}`
                         },
                         body: JSON.stringify({
-                            model: 'gpt-4o-mini',
+                            model: this.settings.openaiModel,
                             messages: [
                                 {
                                     role: 'user',
@@ -296,6 +296,17 @@ class DailyDigestSettingTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                 })
             )
+
+        new Setting(containerEl)
+            .setName('OpenAI model')
+            .setDesc('Enter the name of the OpenAI model to use')
+            .addText(text => text
+                .setPlaceholder('gpt-4o-mini')
+                .setValue(this.plugin.settings.openaiModel)
+                .onChange(async (value) => {
+                    this.plugin.settings.openaiModel = value;
+                    await this.plugin.saveSettings();
+                }));
 
         new Setting(containerEl)
             .setName('Report save location')
