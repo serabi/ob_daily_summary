@@ -70,6 +70,10 @@ Luke
 
 ## Changelog
 
+### 0.0.22
+
+- Customized Prompt
+
 ### 0.0.21
 
 - OpenAI API support
@@ -87,3 +91,9 @@ Luke
 - Settings interface implementation
 - Error logging system
 - Automatic date detection in filenames
+
+## Buy me a coffee
+
+<img src="imgs/aipay.JPG" alt="" width="200" height="" style="margin-right: 50px">
+
+<img src="imgs/bmc_qr.png" alt="" width="200" height="">
