@@ -27,6 +27,7 @@ coverage/
 .idea/
 *.iml
 .vs/
+.history
 
 # os generated file
 Thumbs.db

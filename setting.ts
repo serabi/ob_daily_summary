@@ -4,6 +4,7 @@ interface PluginSettings {
     ollamaModel: string;
     openaiModel: string;
     reportLocation: string;
+    excludedFolders: string[];
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
@@ -11,7 +12,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
     apiEndpoint: '',
     ollamaModel: '',
     openaiModel: 'gpt-4o-mini',
-    reportLocation: '/'
+    reportLocation: '/',
+    excludedFolders: []
 };
 
 export { type PluginSettings, DEFAULT_SETTINGS };

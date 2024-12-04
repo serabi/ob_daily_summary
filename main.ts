@@ -55,8 +55,15 @@ export default class DailyDigestPlugin extends Plugin {
             const todayNotes = files.filter(file => {
                 const fileCreateDate = new Date(file.stat.ctime).setHours(0,0,0,0);
                 const fileModifyDate = new Date(file.stat.mtime).setHours(0,0,0,0);
-                return fileCreateDate.valueOf() === targetDate.valueOf() || fileModifyDate.valueOf() === targetDate.valueOf();
-                // It is important that the dates we compare here had their TIME part zeroed out with date.setHours(0,0,0,0)
+                const isExcluded = this.settings.excludedFolders.some(folder => {
+                    if (!folder) return false;
+                    const normalizedFolder = normalizePath(folder);
+                    const normalizedFilePath = normalizePath(file.path);
+                    return normalizedFilePath.startsWith(normalizedFolder + '/') || 
+                           normalizedFilePath === normalizedFolder;
+                });
+                return !isExcluded && (fileCreateDate.valueOf() === targetDate.valueOf() || 
+                       fileModifyDate.valueOf() === targetDate.valueOf());
             });
             new Notice(`Found ${todayNotes.length} notes`);
 
@@ -316,6 +323,17 @@ class DailyDigestSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.reportLocation)
                 .onChange(async (value) => {
                     this.plugin.settings.reportLocation = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        new Setting(containerEl)
+            .setName('Excluded folders')
+            .setDesc('Set the folders to exclude from the report (e.g., /Archive or /Trash)')
+            .addText(text => text
+                .setPlaceholder('/')
+                .setValue(this.plugin.settings.excludedFolders.join(','))
+                .onChange(async (value) => {
+                    this.plugin.settings.excludedFolders = value.split(',');
                     await this.plugin.saveSettings();
                 }));
     }
