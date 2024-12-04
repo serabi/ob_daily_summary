@@ -201,8 +201,8 @@ export default class DailyDigestPlugin extends Plugin {
             );
 
             const allContent = notesContents.join('\n\n');
-
-            return `Please summarize the main content of today's notes:\n\n${allContent}`;
+            
+            return this.settings.promptTemplate.replace('{{notes}}', allContent);
         } catch (error) {
             console.error('Fail to generate prompt:', error);
             throw new Error(`Fail to generate prompt: ${error.message}`);
@@ -313,6 +313,16 @@ class DailyDigestSettingTab extends PluginSettingTab {
                 .setValue(this.plugin.settings.excludedFolders.join(','))
                 .onChange(async (value) => {
                     this.plugin.settings.excludedFolders = value.split(',');
+                    await this.plugin.saveSettings();
+                }));
+        new Setting(containerEl)
+            .setName('Prompt Template')
+            .setDesc('Customize your prompt template. Use {{notes}} as placeholder for notes content.')
+            .addTextArea(text => text
+                .setPlaceholder('Please summarize the main content of today\'s notes:\n\n{{notes}}')
+                .setValue(this.plugin.settings.promptTemplate)
+                .onChange(async (value) => {
+                    this.plugin.settings.promptTemplate = value;
                     await this.plugin.saveSettings();
                 }));
     }

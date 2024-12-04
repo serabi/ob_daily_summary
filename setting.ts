@@ -5,6 +5,7 @@ interface PluginSettings {
     openaiModel: string;
     reportLocation: string;
     excludedFolders: string[];
+    promptTemplate: string;
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
@@ -13,7 +14,8 @@ const DEFAULT_SETTINGS: PluginSettings = {
     ollamaModel: '',
     openaiModel: 'gpt-4o-mini',
     reportLocation: '/',
-    excludedFolders: []
+    excludedFolders: [],
+    promptTemplate: 'Please summarize the main content of today\'s notes:\n\n{{notes}}'
 };
 
 export { type PluginSettings, DEFAULT_SETTINGS };
