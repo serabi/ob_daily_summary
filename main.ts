@@ -230,7 +230,13 @@ export default class DailyDigestPlugin extends Plugin {
             
             // Add date information to the prompt if available
             if (date) {
-                const dateString = date.toISOString().split('T')[0];
+                // Format the date using the display format
+                const dateString = date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit' 
+                });
+                
                 // Replace "today's notes" with "notes from [date]" if the prompt contains that text
                 if (prompt.includes("today's notes")) {
                     prompt = prompt.replace("today's notes", `notes from ${dateString}`);
@@ -356,9 +362,10 @@ class DailyDigestSettingTab extends PluginSettingTab {
             .setDesc('Set the preferred date format for reports (e.g., YYYY-MM-DD)')
             .addText(text => text
                 .setPlaceholder('YYYY-MM-DD')
-                .setValue(this.plugin.settings.defaultDateFormat)
+                .setValue(this.plugin.settings.dateFormat.input)
                 .onChange(async (value) => {
-                    this.plugin.settings.defaultDateFormat = value;
+                    this.plugin.settings.dateFormat.input = value;
+                    this.plugin.settings.dateFormat.display = value;
                     await this.plugin.saveSettings();
                 }));
                 

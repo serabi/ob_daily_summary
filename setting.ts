@@ -6,7 +6,11 @@ interface PluginSettings {
     reportLocation: string;
     excludedFolders: string[];
     promptTemplate: string;
-    defaultDateFormat: string; // Add date format setting
+    dateFormat: {
+        input: string;     // Format used when inputting dates
+        display: string;   // Format used when displaying dates
+        parse: (dateString: string) => Date; // Custom parse function
+    };
 }
 
 const DEFAULT_SETTINGS: PluginSettings = {
@@ -17,7 +21,26 @@ const DEFAULT_SETTINGS: PluginSettings = {
     reportLocation: '/',
     excludedFolders: [],
     promptTemplate: 'Please summarize the main content of today\'s notes:\n\n{{notes}}',
-    defaultDateFormat: 'YYYY-MM-DD' // Default date format
+    dateFormat: {
+        input: 'YYYY-MM-DD',
+        display: 'YYYY-MM-DD',
+        parse: (dateString: string) => {
+            // Default to using native Date parsing
+            const parsedDate = new Date(dateString);
+            
+            // Ensure the date is valid and set to midnight
+            if (!isNaN(parsedDate.getTime())) {
+                return new Date(
+                    parsedDate.getFullYear(), 
+                    parsedDate.getMonth(), 
+                    parsedDate.getDate()
+                );
+            }
+            
+            // Fallback to current date if parsing fails
+            return new Date();
+        }
+    }
 };
 
 export { type PluginSettings, DEFAULT_SETTINGS };
