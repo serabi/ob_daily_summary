@@ -1,23 +1,36 @@
 # Daily Summary Plugin for Obsidian
 
-An Obsidian plugin that automatically generates daily summaries. It collects notes from the current day and uses LLM to generate a concise daily report.
+An Obsidian plugin that generates daily summaries using AI. The plugin collects notes from current or previous days and then uses a LLM to generate a concise daily report.
 
-## Features
+This plugin is a fork of [Daily Summary](https://github.com/CSLukkun/ob_daily_summary). THIS PLUGIN IS IN ACTIVE DEVELOPMENT. Please note that not all features may not work at this time. 
 
-- Automatically identifies notes from the current day
-- Uses LLM to generate intelligent summaries
+## Current Features
+
+- Identifies notes from the current day or a previous day. 
+- Uses either Ollama or OpenAI LLM to generate intelligent summaries
+- Support for a custom prompt template 
 - Customizable API settings
 - Configurable report save location
 - Quick access through command palette
 
+## Future Features
+
+- Support for Anthropic API keys
+- Support for multiple custom prompt templates
+
 ## Installation
 
-1. Open Obsidian Settings
-2. Navigate to Third-party plugins
-3. Disable Safe mode
-4. Click Browse community plugins
-5. Search for "Daily Summary"
-6. Click Install
+### Manual Installation
+
+1. Download the latest release from the GitHub repository
+2. Create a folder named `obsidian-daily-summary` in your Obsidian vault's `.obsidian/plugins/` directory
+3. Extract the downloaded plugin files into the `obsidian-daily-summary` folder
+4. Ensure the following files are present:
+   - `main.js`
+   - `manifest.json`
+   - `styles.css` (if applicable)
+5. Restart Obsidian
+6. Enable the plugin in Settings → Community Plugins
 
 ## Usage
 
@@ -66,34 +79,14 @@ The plugin includes comprehensive error logging:
 
 ## Author
 
-Luke
+Sarah W. 
+Original plugin written by [Luke](https://github.com/CSLukkun) 
 
 ## Changelog
 
-### 0.0.22
+### v0.1.0
+- Forked from original plugin - [Daily Summary](https://github.com/CSLukkun/ob_daily_summary).
+- Renamed plugin to "Obsidian Daily Summary"
+- Added ability to pull summaries for notes from previous days
 
-- Customized Prompt
 
-### 0.0.21
-
-- OpenAI API support
-- Add Excluded dirs setting
-- Fix timestamp
-
-### 0.0.7
-
-- Ollama support addition
-
-### 0.0.6
-
-- Initial release
-- Basic daily report generation
-- Settings interface implementation
-- Error logging system
-- Automatic date detection in filenames
-
-## Buy me a coffee
-
-<img src="imgs/aipay.JPG" alt="" width="200" height="" style="margin-right: 50px">
-
-<img src="imgs/bmc_qr.png" alt="" width="200" height="">
