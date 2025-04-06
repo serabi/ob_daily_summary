@@ -35,6 +35,18 @@ export default class DailyDigestPlugin extends Plugin {
                 modal.open();
             }
         });
+
+        // Add new command for specific date selection
+        this.addCommand({
+            id: 'generate-report-for-date',
+            name: 'Generate report for specific date',
+            callback: () => {
+                const modal = new DatePickerModal(this.app, async (selectedDate: Date) => {
+                    await this.generateDailyReportForDate(selectedDate);
+                });
+                modal.open();
+            }
+        });
     }
 
     async loadSettings() {
@@ -49,45 +61,11 @@ export default class DailyDigestPlugin extends Plugin {
         try {
             let targetDate = new Date();
             targetDate.setDate(targetDate.getDate() + daysOffset);
+            // Normalize the date to midnight
             targetDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-
-            const files = this.app.vault.getMarkdownFiles();
-            const todayNotes = files.filter(file => {
-                const fileDate = new Date(file.stat.ctime);
-                const fileCreateDate = new Date(fileDate.getFullYear(), fileDate.getMonth(), fileDate.getDate()).getTime();
-                const modifyDate = new Date(file.stat.mtime);
-                const fileModifyDate = new Date(modifyDate.getFullYear(), modifyDate.getMonth(), modifyDate.getDate()).getTime();
-                
-                const isExcluded = this.settings.excludedFolders.some(folder => {
-                    if (!folder) return false;
-                    const normalizedFolder = normalizePath(folder);
-                    const normalizedFilePath = normalizePath(file.path);
-                    return normalizedFilePath.startsWith(normalizedFolder + '/') || 
-                           normalizedFilePath === normalizedFolder;
-                });
-                
-                return !isExcluded && (fileCreateDate === targetDate.getTime() || 
-                       fileModifyDate === targetDate.getTime());
-            });
-            new Notice(`Found ${todayNotes.length} notes`);
-
-            if (todayNotes.length === 0) {
-                new Notice(`No notes found for ${targetDate.toISOString().split('T')[0]}`);
-                return;
-            }
-
-            const prompt:string = await this.generatePrompt(todayNotes);
-
-            const summary:string = await this.callLLM(prompt);
-
-            if (!summary) {
-                new Notice('Failed to generate summary');
-                return;
-            }
-
-            await this.createDailyReport(targetDate, summary);
-            new Notice('Daily report generated successfully!');
-
+            
+            await this.generateDailyReportForDate(targetDate);
+            
         } catch (error) {
             await this.logError(error, 'Fail to generate report');
             console.error('Error generating daily report:', error);
@@ -183,6 +161,52 @@ export default class DailyDigestPlugin extends Plugin {
         }
     }
 
+    async generateDailyReportForDate(date: Date) {
+        try {
+            const files = this.app.vault.getMarkdownFiles();
+            const todayNotes = files.filter(file => {
+                const fileDate = new Date(file.stat.ctime);
+                const fileCreateDate = new Date(fileDate.getFullYear(), fileDate.getMonth(), fileDate.getDate()).getTime();
+                const modifyDate = new Date(file.stat.mtime);
+                const fileModifyDate = new Date(modifyDate.getFullYear(), modifyDate.getMonth(), modifyDate.getDate()).getTime();
+                
+                const isExcluded = this.settings.excludedFolders.some(folder => {
+                    if (!folder) return false;
+                    const normalizedFolder = normalizePath(folder);
+                    const normalizedFilePath = normalizePath(file.path);
+                    return normalizedFilePath.startsWith(normalizedFolder + '/') || 
+                           normalizedFilePath === normalizedFolder;
+                });
+                
+                return !isExcluded && (fileCreateDate === date.getTime() || 
+                       fileModifyDate === date.getTime());
+            });
+            new Notice(`Found ${todayNotes.length} notes`);
+
+            if (todayNotes.length === 0) {
+                new Notice(`No notes found for ${date.toISOString().split('T')[0]}`);
+                return;
+            }
+
+            const prompt:string = await this.generatePrompt(todayNotes, date);
+
+            const summary:string = await this.callLLM(prompt);
+
+            if (!summary) {
+                new Notice('Failed to generate summary');
+                return;
+            }
+
+            await this.createDailyReport(date, summary);
+            new Notice('Daily report generated successfully!');
+
+        } catch (error) {
+            await this.logError(error, 'Fail to generate report');
+            console.error('Error generating daily report:', error);
+            new Notice(`Error: ${error.message}`);
+        }
+    }
+
     private getDateFromFileName(fileName: string): Date {
         const match = fileName.match(/(\d{4}-\d{2}-\d{2})/);
         if (match == null) {
@@ -191,7 +215,7 @@ export default class DailyDigestPlugin extends Plugin {
         return new Date(match[1])
     }
 
-    private async generatePrompt(notes: any[]): Promise<string> {
+    private async generatePrompt(notes: any[], date?: Date): Promise<string> {
         try {
             const notesContents = await Promise.all(
                 notes.map(async note => {
@@ -202,7 +226,18 @@ export default class DailyDigestPlugin extends Plugin {
 
             const allContent = notesContents.join('\n\n');
             
-            return this.settings.promptTemplate.replace('{{notes}}', allContent);
+            let prompt = this.settings.promptTemplate.replace('{{notes}}', allContent);
+            
+            // Add date information to the prompt if available
+            if (date) {
+                const dateString = date.toISOString().split('T')[0];
+                // Replace "today's notes" with "notes from [date]" if the prompt contains that text
+                if (prompt.includes("today's notes")) {
+                    prompt = prompt.replace("today's notes", `notes from ${dateString}`);
+                }
+            }
+            
+            return prompt;
         } catch (error) {
             console.error('Fail to generate prompt:', error);
             throw new Error(`Fail to generate prompt: ${error.message}`);
@@ -315,6 +350,18 @@ class DailyDigestSettingTab extends PluginSettingTab {
                     this.plugin.settings.excludedFolders = value.split(',');
                     await this.plugin.saveSettings();
                 }));
+                
+        new Setting(containerEl)
+            .setName('Date format')
+            .setDesc('Set the preferred date format for reports (e.g., YYYY-MM-DD)')
+            .addText(text => text
+                .setPlaceholder('YYYY-MM-DD')
+                .setValue(this.plugin.settings.defaultDateFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.defaultDateFormat = value;
+                    await this.plugin.saveSettings();
+                }));
+                
         new Setting(containerEl)
             .setName('Prompt Template')
             .setDesc('Customize your prompt template. Use {{notes}} as placeholder for notes content.')
@@ -358,6 +405,48 @@ class DaysSelectionModal extends Modal {
             if (!isNaN(days) && days > 0) {
                 this.daysCallback(days);
                 this.close();
+            }
+        };
+    }
+
+    onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+    }
+}
+
+class DatePickerModal extends Modal {
+    private dateCallback: (date: Date) => void;
+    private datePicker: HTMLInputElement;
+
+    constructor(app: App, callback: (date: Date) => void) {
+        super(app);
+        this.dateCallback = callback;
+    }
+
+    onOpen() {
+        const { contentEl } = this;
+        contentEl.createEl('h3', { text: 'Select a date for the report' });
+
+        // Create date picker input
+        this.datePicker = contentEl.createEl('input', {
+            type: 'date',
+            value: new Date().toISOString().split('T')[0], // Default to today
+        });
+
+        // Add confirmation button
+        const buttonEl = contentEl.createEl('button', {
+            text: 'Generate Report',
+            cls: 'mod-cta'
+        });
+
+        buttonEl.onclick = () => {
+            const selectedDate = new Date(this.datePicker.value);
+            if (!isNaN(selectedDate.getTime())) {
+                this.dateCallback(selectedDate);
+                this.close();
+            } else {
+                new Notice('Please select a valid date');
             }
         };
     }
