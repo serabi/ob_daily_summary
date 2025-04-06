@@ -11,7 +11,8 @@ import {
 import { PluginSettings, DEFAULT_SETTINGS } from './setting';
 
 export default class DailyDigestPlugin extends Plugin {
-    settings: PluginSettings;
+    declare settings: PluginSettings;
+    declare app: App;
 
     async onload() {
         await this.loadSettings();
@@ -51,11 +52,6 @@ export default class DailyDigestPlugin extends Plugin {
 
     async loadSettings() {
         this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-        
-        // Ensure promptTemplate is always set
-        if (!this.settings.promptTemplate) {
-            this.settings.promptTemplate = DEFAULT_SETTINGS.promptTemplate;
-        }
     }
 
     async saveSettings() {
@@ -284,7 +280,8 @@ API configuration:
 }
 
 class DailyDigestSettingTab extends PluginSettingTab {
-    plugin: DailyDigestPlugin;
+    declare plugin: DailyDigestPlugin;
+    declare containerEl: HTMLElement;
 
     constructor(app: App, plugin: DailyDigestPlugin) {
         super(app, plugin);
@@ -389,6 +386,7 @@ class DailyDigestSettingTab extends PluginSettingTab {
 
 class DaysSelectionModal extends Modal {
     private daysCallback: (days: number) => void;
+    declare contentEl: HTMLElement;
 
     constructor(app: App, callback: (days: number) => void) {
         super(app);
@@ -422,14 +420,18 @@ class DaysSelectionModal extends Modal {
     }
 
     onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
+        this.contentEl.empty();
+    }
+
+    onShow() {
+        this.contentEl.empty();
     }
 }
 
 class DatePickerModal extends Modal {
     private dateCallback: (date: Date) => void;
     private datePicker: HTMLInputElement;
+    declare contentEl: HTMLElement;
 
     constructor(app: App, callback: (date: Date) => void) {
         super(app);
@@ -464,7 +466,10 @@ class DatePickerModal extends Modal {
     }
 
     onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
+        this.contentEl.empty();
+    }
+
+    onShow() {
+        this.contentEl.empty();
     }
 }
