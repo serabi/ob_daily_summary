@@ -79,8 +79,8 @@ The plugin includes comprehensive error logging:
 
 ## Author
 
-Sarah W. 
-Original plugin written by [Luke](https://github.com/CSLukkun) 
+serabi
+Original plugin written by [CSLukkun](https://github.com/CSLukkun) 
 
 ## Changelog
 
@@ -88,5 +88,3 @@ Original plugin written by [Luke](https://github.com/CSLukkun)
 - Forked from original plugin - [Daily Summary](https://github.com/CSLukkun/ob_daily_summary).
 - Renamed plugin to "Obsidian Daily Summary"
 - Added ability to pull summaries for notes from previous days
-
-
