@@ -373,7 +373,7 @@ class DailyDigestSettingTab extends PluginSettingTab {
             .setName('Prompt Template')
             .setDesc('Customize your prompt template. Use {{notes}} as placeholder for notes content.')
             .addTextArea(text => text
-                .setPlaceholder('Please summarize the main content of today\'s notes:\n\n{{notes}}')
+                .setPlaceholder(this.plugin.settings.promptTemplate || 'As a sharp, insightful secretary, synthesize today\'s notes into a comprehensive 1-3 paragraph summary. Your goal is to weave together the key themes, insights, and connections across different topics. Ensure the summary is:\n\n- Thorough and inclusive of all significant information\n- Concise yet detailed, avoiding unnecessary verbosity\n- Structured to highlight the most important insights and relationships between different notes\n\nAim to create a summary that captures the essence of the day\'s journey and key learnings. {{notes}}')
                 .setValue(this.plugin.settings.promptTemplate)
                 .onChange(async (value) => {
                     this.plugin.settings.promptTemplate = value;
