@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: PluginSettings = {
     openaiModel: 'gpt-4o-mini',
     reportLocation: '/',
     excludedFolders: [],
-    promptTemplate: 'Please summarize the main content of today\'s notes:\n\n{{notes}}',
+    promptTemplate: 'You are a sharp secretary who helps me connect the dots between my daily notes. Please provide a concise and insightful summary of today\'s notes. Break the summary into 2-3 clear, easy-to-read paragraphs that flow naturally. Each paragraph should focus on a different aspect of the day, making the text more digestible and engaging. Highlight key themes and important details, but avoid long, dense blocks of text. Do not include any additional text or formatting other than the summary:\n\n{{notes}}',
     dateFormat: {
         input: 'YYYY-MM-DD',
         display: 'YYYY-MM-DD',
